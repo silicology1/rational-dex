@@ -27,4 +27,4 @@ In a consensus economy, every individual impacted by a token’s value has a voi
 
 This is an experimental framework. In the future, it can be refined by incorporating a **reputation score** instead of simply relying on the amount of stake. The reputation score can be calculated through a **Schelling game**, where users' identities remain **pseudoanonymous**, much like social media accounts. Reputatiosn scores is also resistance to sybil attacks.
 
-A user’s profile will be validated based on the **rationality** of their contributions and their **specialization**, which is inferred from their **profile posts** and engagement. Over time, **academics and experts** will be increasingly involved in the decision-making process, ensuring a more informed and credible governance model.
+A user’s profile will be validated based on the **rationality** of their contributions and their **specialization**, which is inferred from their **profile posts** and engagement. Over time, **academics and experts** will be increasingly involved in the decision-making process, ensuring a more informed and credible governance and price discovery model.
