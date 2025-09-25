@@ -29,9 +29,25 @@ pub struct InitializePool<'info> {
     pub authority: Signer<'info>,
     #[account(init, payer = authority, space = 8 + Pool::INIT_SPACE, seeds = [b"pool"], bump)]
     pub pool: Account<'info, Pool>,
-    #[account(mut)]
+    #[account(
+        init_if_needed,
+        payer = authority,
+        token::mint = mint_a,
+        token::authority = vault_a,
+        token::token_program = token_program,
+        seeds = [b"vault_a"],
+        bump
+    )]
     pub vault_a: InterfaceAccount<'info, TokenAccount>,
-    #[account(mut)]
+    #[account(
+        init_if_needed,
+        payer = authority,
+        token::mint = mint_b,
+        token::authority = vault_b,
+        token::token_program = token_program,
+        seeds = [b"vault_b"],
+        bump
+    )]
     pub vault_b: InterfaceAccount<'info, TokenAccount>,
     pub mint_a: InterfaceAccount<'info, Mint>,
     pub mint_b: InterfaceAccount<'info, Mint>,

@@ -7085,6 +7085,7 @@ dependencies = [
  "anchor-client",
  "anchor-lang",
  "rational-dex-program",
+ "spl-token 8.0.0",
 ]
 
 [[package]]
