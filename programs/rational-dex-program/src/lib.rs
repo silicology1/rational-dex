@@ -9,10 +9,10 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("AUkNodLEkp8gaQwyc4kZf2psi3BknXexwe4yfherhyUY");
+declare_id!("423RnyowFFTqfPRsKAWPEvprwTvcTG3jpHFAKrqPdiwv");
 
 #[program]
-pub mod rational_dex {
+pub mod temp {
     use super::*;
 
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {

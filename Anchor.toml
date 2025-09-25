@@ -1,18 +1,17 @@
 [toolchain]
-package_manager = "yarn"
 
 [features]
 resolution = true
 skip-lint = false
 
 [programs.localnet]
-rational_dex = "AUkNodLEkp8gaQwyc4kZf2psi3BknXexwe4yfherhyUY"
+rational-dex-program = "3rFzgYuL3EBragfJhc9ELMUQPeLvP4qApJyWpTBMuZ7g"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "Localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

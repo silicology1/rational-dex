@@ -1,12 +1,12 @@
 [package]
-name = "rational-dex"
+name = "rational-dex-program"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "rational_dex"
+name = "rational_dex_program"
 
 [features]
 default = []
@@ -16,8 +16,7 @@ no-idl = []
 no-log-ix-name = []
 idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
-
 [dependencies]
-anchor-lang = "0.31.1"
+anchor-lang = "0.31"
 anchor-spl = "0.31.1"
 sha2 = "0.10.9"

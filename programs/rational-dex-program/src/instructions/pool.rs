@@ -2,6 +2,7 @@ use crate::state::pool_state::Pool;
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use sha2::{Digest, Sha256};
+
 pub fn initialize_pool_handler(
     ctx: Context<InitializePool>,
     fee_numerator: u64,
