@@ -53,6 +53,6 @@ pub struct InitializePool<'info> {
     pub mint_b: InterfaceAccount<'info, Mint>,
     #[account(mut)]
     pub mint_lp: InterfaceAccount<'info, Mint>,
-    pub system_program: Program<'info, System>,
     pub token_program: Interface<'info, TokenInterface>,
+    pub system_program: Program<'info, System>,
 }
