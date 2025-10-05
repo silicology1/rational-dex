@@ -1,0 +1,6 @@
+[stderr]  Container artifacts-arx-node-0-1  Recreate
+[stderr]  Container artifacts-arx-node-1-1  Recreate
+[stderr]  Container artifacts-arx-node-0-1  Recreated
+[stderr]  Container artifacts-arx-node-1-1  Recreated
+[stdout] Attaching to arx-node-0-1, arx-node-1-1
+[stdout] [Karx-node-0-1 exited with code 137
