@@ -56,4 +56,11 @@ pub enum ErrorCode {
 
     #[msg("Failed to deserialize VoteAccount")]
     VoteAccountDeserialize,
+
+    #[msg("Invalid authority")]
+    InvalidAuthority,
+    #[msg("The computation was aborted")]
+    AbortedComputation,
+    #[msg("Cluster not set")]
+    ClusterNotSet,
 }

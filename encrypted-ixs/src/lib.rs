@@ -70,7 +70,7 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn reveal_result(vote_stats_ctxt: Enc<Mxe, VoteStats>) -> i8 {
+    pub fn reveal_result(vote_stats_ctxt: Enc<Mxe, VoteStats>) -> [u64; 7] {
         let vote_stats = vote_stats_ctxt.to_arcis();
 
         let counts = [
@@ -83,24 +83,6 @@ mod circuits {
             vote_stats.three,
         ];
 
-        // Compute total votes
-        let mut total = 0u64;
-        for i in 0..7 {
-            total += counts[i];
-        }
-
-        // Compute cumulative sum to find median index
-        let mid = total / 2;
-        let mut cumulative = 0u64;
-        let mut median_idx = 0u64;
-
-        for i in 0..7 {
-            let cond = (cumulative <= mid) && (mid < cumulative + counts[i]);
-            median_idx = median_idx + (cond as u64) * (i as u64);
-            cumulative += counts[i];
-        }
-
-        // Convert index to vote value (-3..3)
-        ((median_idx as i8) - 3).reveal()
+        (counts).reveal()
     }
 }
