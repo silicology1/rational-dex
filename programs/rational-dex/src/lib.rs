@@ -64,4 +64,22 @@ pub mod rational_dex {
     ) -> Result<()> {
         vote_callback_handler(ctx, output)
     }
+    pub fn init_reveal_result_comp_def(ctx: Context<InitRevealResultCompDef>) -> Result<()> {
+        init_reveal_result_comp_def_handler(ctx)
+    }
+
+    pub fn reveal_result(
+        ctx: Context<RevealVotingResult>,
+        computation_offset: u64,
+        id: u32,
+    ) -> Result<()> {
+        reveal_result_handler(ctx, computation_offset, id)
+    }
+    #[arcium_callback(encrypted_ix = "reveal_result")]
+    pub fn reveal_result_callback(
+        ctx: Context<RevealResultCallback>,
+        output: ComputationOutputs<RevealResultOutput>,
+    ) -> Result<()> {
+        reveal_result_callback_handler(ctx, output)
+    }
 }
