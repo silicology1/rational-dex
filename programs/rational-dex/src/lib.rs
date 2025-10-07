@@ -34,4 +34,34 @@ pub mod rational_dex {
     ) -> Result<()> {
         init_vote_stats_callback_handler(ctx, output)
     }
+
+    pub fn init_vote_comp_def(ctx: Context<InitVoteCompDef>) -> Result<()> {
+        init_vote_comp_def_handler(ctx)
+    }
+
+    pub fn vote(
+        ctx: Context<Vote>,
+        computation_offset: u64,
+        _id: u32,
+        vote: [u8; 32],
+        vote_encryption_pubkey: [u8; 32],
+        vote_nonce: u128,
+    ) -> Result<()> {
+        vote_handler(
+            ctx,
+            computation_offset,
+            _id,
+            vote,
+            vote_encryption_pubkey,
+            vote_nonce,
+        )
+    }
+
+    #[arcium_callback(encrypted_ix = "vote")]
+    pub fn vote_callback(
+        ctx: Context<VoteCallback>,
+        output: ComputationOutputs<VoteOutput>,
+    ) -> Result<()> {
+        vote_callback_handler(ctx, output)
+    }
 }
