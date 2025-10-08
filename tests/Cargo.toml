@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 
-rational-dex-program = { version = "0.1.0", path = "../programs/rational-dex-program" }
+rational_dex = { version = "0.1.0", path = "../programs/rational-dex" }
 anchor-lang = "0.31"
 anchor-client = "0.31.1"
 spl-associated-token-account = "7.0.0"
@@ -31,3 +31,6 @@ solana-program-option = "2.1.21"
 solana-program-pack = "2.1.21"
 partial-idl-parser = "1.2.0"
 borsh = { version = "1.5", features = ["derive"] }
+boa_engine = "0.20.0"
+boa_parser = "0.20.0"
+boa_runtime = "0.20.0"

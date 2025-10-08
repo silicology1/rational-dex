@@ -10,11 +10,6 @@ pub fn init_reveal_result_comp_def_handler(ctx: Context<InitRevealResultCompDef>
 }
 
 /// Reveals the final result of the poll.
-///
-/// Only the poll authority can call this function to decrypt and reveal the vote tallies.
-/// The MPC computation compares the yes and no vote counts and returns whether
-/// the majority voted yes (true) or no (false).
-///
 /// # Arguments
 /// * `id` - The poll ID to reveal results for
 pub fn reveal_result_handler(
