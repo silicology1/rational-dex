@@ -1,5 +1,5 @@
-use partial_idl_parser::get_idl;
 use partial_idl_parser::AnchorIdlPartialData;
+use partial_idl_parser::{get_idl, idl_custom_path};
 
 use std::env;
 use std::path::PathBuf;
@@ -29,11 +29,19 @@ use {
     },
 };
 
-const IDL_RAW_DATA: &str = get_idl!();
+const IDL_RAW_DATA: &str = idl_custom_path!(concat!(
+    env!("CARGO_WORKSPACE_DIR"),
+    "/target/idl/",
+    "rational_dex.json"
+));
+/// Replace with your program id (you provided this earlier).
+const PROGRAM_ID: Pubkey = pubkey!("EEL1Q3J9MjPxTWagTKE39jpUVBjUg7q283ztTVzbveDz");
+
+const PROGRAM_BYTES: &[u8] = include_bytes!("../../target/deploy/rational_dex.so");
 
 #[test]
 fn test_initialize_pool() {
-    let program_id = pubkey!("423RnyowFFTqfPRsKAWPEvprwTvcTG3jpHFAKrqPdiwv");
+    let program_id = PROGRAM_ID;
 
     let owner_a = Pubkey::new_unique();
     let owner_b = Pubkey::new_unique();
@@ -43,8 +51,8 @@ fn test_initialize_pool() {
     let owner_lp = Pubkey::new_unique();
 
     let mut svm = LiteSVM::new();
-    let program_bytes = include_bytes!("../../target/deploy/rational_dex_program.so");
-    svm.add_program(program_id, program_bytes).unwrap();
+
+    svm.add_program(program_id, PROGRAM_BYTES).unwrap();
 
     let mint_account_a = Mint {
         mint_authority: COption::Some(owner_a),
@@ -167,7 +175,10 @@ fn test_initialize_pool() {
 
     let sim_res = svm.simulate_transaction(tx.clone()).unwrap();
     println!("logs: {:?}", sim_res.meta.logs);
+}
 
+#[test]
+fn js_test() {
     let root = env::current_dir().unwrap();
     println!("Project root: {:?}", root);
 

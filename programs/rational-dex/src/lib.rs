@@ -82,4 +82,23 @@ pub mod rational_dex {
     ) -> Result<()> {
         reveal_result_callback_handler(ctx, output)
     }
+
+    // Conviction Voting Instructions
+
+    pub fn create_proposal(ctx: Context<CreateProposal>, evidence: String) -> Result<()> {
+        create_proposal_handler(ctx, evidence)
+    }
+
+    // pub fn conviction_vote(
+    //     ctx: Context<CastVote>,
+    //     _proposer: Pubkey,
+    //     score: u8,
+    //     conviction: u8,
+    // ) -> Result<()> {
+    //     conviction_vote_handler(ctx, _proposer, score, conviction)
+    // }
+
+    // pub fn finalize(ctx: Context<FinalizeProposal>, _proposer: Pubkey) -> Result<()> {
+    //     finalize_handler(ctx, _proposer)
+    // }
 }
