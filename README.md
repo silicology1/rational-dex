@@ -1,3 +1,8 @@
+# Rational Dex: Consensus-Driven DEX
+
+[Docs](docs/rational-exchange-logic.md)
+
+
 # Structure of this project
 
 This project is structured pretty similarly to how a regular Solana Anchor project is structured. The main difference lies in there being two places to write code here:

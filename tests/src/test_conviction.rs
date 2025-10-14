@@ -24,6 +24,9 @@ use {
     },
 };
 
+use solana_program::rent::Rent;
+
+use solana_program::system_instruction::create_account;
 const IDL_RAW_DATA: &str = idl_custom_path!(concat!(
     env!("CARGO_WORKSPACE_DIR"),
     "/target/idl/",
@@ -36,7 +39,7 @@ const PROGRAM_ID: Pubkey = pubkey!("EEL1Q3J9MjPxTWagTKE39jpUVBjUg7q283ztTVzbveDz
 const PROGRAM_BYTES: &[u8] = include_bytes!("../../target/deploy/rational_dex.so");
 
 #[test]
-fn test_create_vote_finalize_median() {
+fn test_create_proposal() {
     let program_id = PROGRAM_ID;
 
     let mut svm = LiteSVM::new();
@@ -46,13 +49,51 @@ fn test_create_vote_finalize_median() {
     let author = Keypair::new();
 
     svm.airdrop(&author.pubkey(), 10_000_000_000).unwrap();
-    let voter_a = Keypair::new();
-    let voter_b = Keypair::new();
-    let voter_c = Keypair::new();
-
-    // derive the proposal PDA (seeds: b"proposal", author.key)
-    let (proposal_pda, _bump) =
+    // PDAs: proposal, score, weight, voter (seeded by author.pubkey())
+    let (proposal_pda, _) =
         Pubkey::find_program_address(&[b"proposal", author.pubkey().as_ref()], &PROGRAM_ID);
+
+    let score_account = Keypair::new();
+
+    let weight_account = Keypair::new();
+    let voter_account = Keypair::new();
+
+    let score_space = 8 + 1024; // dummy sizes
+    let weight_space = 8 + 1024;
+    let voter_space = 8 + 1024;
+
+    let rent = Rent::default();
+    let score_rent = rent.minimum_balance(score_space);
+    let weight_rent = rent.minimum_balance(weight_space);
+    let voter_rent = rent.minimum_balance(voter_space);
+
+    let total_rent = score_rent + weight_rent + voter_rent;
+    svm.airdrop(&author.pubkey(), total_rent * 2).unwrap(); // give
+
+    for (keypair, space, rent) in [
+        (&score_account, score_space, score_rent),
+        (&weight_account, weight_space, weight_rent),
+        (&voter_account, voter_space, voter_rent),
+    ] {
+        let instr = create_account(
+            &author.pubkey(),
+            &keypair.pubkey(),
+            rent,
+            space as u64,
+            &PROGRAM_ID,
+        );
+
+        let blockhash = svm.latest_blockhash();
+        let msg = Message::new_with_blockhash(&[instr], Some(&author.pubkey()), &blockhash);
+
+        let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), &[&author, keypair])
+            .unwrap();
+
+        let sim_res = svm.simulate_transaction(tx.clone()).unwrap();
+        println!("logs: {:?}", sim_res.meta.logs);
+        let meta = svm.send_transaction(tx).unwrap();
+        assert_eq!(sim_res.meta, meta);
+    }
 
     // 1) Create proposal instruction
     // The create_proposal_handle signature you posted takes: evidence: String
@@ -65,15 +106,18 @@ fn test_create_vote_finalize_median() {
     };
 
     let create_accounts = vec![
-        AccountMeta::new(author.pubkey(), true),
+        AccountMeta::new(author.pubkey(), true), // author signer
         AccountMeta::new(proposal_pda, false),
+        AccountMeta::new(score_account.pubkey(), false),
+        AccountMeta::new(weight_account.pubkey(), false),
+        AccountMeta::new(voter_account.pubkey(), false),
         AccountMeta::new_readonly(solana_program::system_program::id(), false),
     ];
 
     let parsed_idl = AnchorIdlPartialData::parse(IDL_RAW_DATA).unwrap();
 
     let discriminant = parsed_idl
-        .get_discriminant("create_proposal")
+        .get_discriminant("initialize_proposal")
         .unwrap_or_default();
 
     println!("Discriminant: {:?}", discriminant);
@@ -90,4 +134,6 @@ fn test_create_vote_finalize_median() {
 
     let sim_res = svm.simulate_transaction(tx.clone()).unwrap();
     println!("logs: {:?}", sim_res.meta.logs);
+    let meta = svm.send_transaction(tx).unwrap();
+    assert_eq!(sim_res.meta, meta);
 }

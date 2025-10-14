@@ -1,98 +1,148 @@
 /// Conviction voting is used to assign reputation scores to accounts. Each account can receive a score between 0 and 5, and the final reputation is determined by the median of all votes, weighted by conviction.
-use crate::state::conviction_state::{Proposal, VoteRecord};
+use crate::conviction_state::MAX_VOTES;
+use crate::state::conviction_state::{Proposal, Score, Voter, Weight};
 use anchor_lang::prelude::*;
 
-pub fn create_proposal_handler(ctx: Context<CreateProposal>, evidence: String) -> Result<()> {
+pub fn initialize_proposal_handler(
+    ctx: Context<InitializeProposal>,
+    evidence: String,
+) -> Result<()> {
     let proposal = &mut ctx.accounts.proposal;
     proposal.author = ctx.accounts.author.key();
     proposal.evidence = evidence;
-    proposal.votes_account_count = 0;
+    proposal.votes_account_count = 1;
     proposal.final_score = None;
+    proposal.score_updated_at = None;
     Ok(())
 }
 
-// pub fn conviction_vote_handler(
-//     ctx: Context<CastVote>,
-//     _proposer: Pubkey,
-//     score: u8,
-//     conviction: u8,
-// ) -> Result<()> {
-//     require!(score <= 5, VotingError::InvalidScore);
-//     require!(conviction <= 6, VotingError::InvalidConviction);
-
-//     let voter = &ctx.accounts.voter;
-//     let proposal = &mut ctx.accounts.proposal;
-
-//     let weight = conviction_weight(conviction)?;
-//     let vote = VoteRecord {
-//         voter: voter.key(),
-//         score,
-//         conviction,
-//         weight,
-//     };
-
-//     // Update or insert vote
-//     if let Some(existing) = proposal.votes.iter_mut().find(|v| v.voter == voter.key()) {
-//         *existing = vote;
-//     } else {
-//         proposal.votes.push(vote);
-//     }
-
-//     Ok(())
-// }
-
-// /// Finalize the proposal and compute median
-// pub fn finalize_handler(ctx: Context<FinalizeProposal>, _proposer: Pubkey) -> Result<()> {
-//     let proposal = &mut ctx.accounts.proposal;
-//     require!(!proposal.votes.is_empty(), VotingError::NoVotes);
-
-//     let mut scores: Vec<u8> = proposal
-//         .votes
-//         .iter()
-//         .flat_map(|v| std::iter::repeat(v.score).take(v.weight as usize))
-//         .collect();
-
-//     scores.sort_by(|a, b| a.partial_cmp(b).unwrap());
-//     let mid = scores.len() / 2;
-//     let median = if scores.len() % 2 == 0 {
-//         (scores[mid - 1] + scores[mid]) / 2
-//     } else {
-//         scores[mid]
-//     };
-
-//     proposal.final_score = Some(median);
-//     proposal.score_updated_at = Some(Clock::get()?.unix_timestamp);
-
-//     Ok(())
-// }
-
 #[derive(Accounts)]
-pub struct CreateProposal<'info> {
+pub struct InitializeProposal<'info> {
     #[account(mut)]
     pub author: Signer<'info>,
-    #[account(init, payer = author, space = 8 + Proposal::INIT_SPACE, seeds = [b"proposal",author.key().as_ref()], bump)]
+
+    #[account(
+        init,
+        payer = author,
+        space = 8 + Proposal::INIT_SPACE,
+        seeds = [b"proposal", author.key().as_ref()],
+        bump
+    )]
     pub proposal: Account<'info, Proposal>,
+
+    #[account(zero)]
+    pub score: AccountLoader<'info, Score>,
+
+    #[account(zero)]
+    pub weight: AccountLoader<'info, Weight>,
+
+    #[account(zero)]
+    pub voter: AccountLoader<'info, Voter>,
+
     pub system_program: Program<'info, System>,
 }
 
-// #[derive(Accounts)]
-// #[instruction(proposer: Pubkey)]
-// pub struct CastVote<'info> {
-//     #[account(mut,seeds = [b"proposal",proposer.as_ref()], bump
-//     )]
-//     pub proposal: Account<'info, Proposal>,
-//     #[account(mut)]
-//     pub voter: Signer<'info>,
-// }
+#[derive(Accounts)]
+#[instruction(proposer: Pubkey)]
+pub struct ConvictionCastVote<'info> {
+    #[account(mut, seeds = [b"proposal", proposer.key().as_ref()], bump)]
+    pub proposal: Account<'info, Proposal>,
+    #[account(mut)]
+    pub score: AccountLoader<'info, Score>,
+    #[account(mut)]
+    pub weight: AccountLoader<'info, Weight>,
+    #[account(mut)]
+    pub voter: AccountLoader<'info, Voter>,
+    #[account(mut)]
+    pub voter_signer: Signer<'info>,
+}
 
-// #[derive(Accounts)]
-// #[instruction(proposer: Pubkey)]
-// pub struct FinalizeProposal<'info> {
-//     #[account(mut,seeds = [b"proposal",proposer.as_ref()], bump
-//     )]
-//     pub proposal: Account<'info, Proposal>,
-//     pub authority: Signer<'info>,
-// }
+pub fn conviction_vote_handler(
+    ctx: Context<ConvictionCastVote>,
+    _proposer: Pubkey,
+    score_value: u8,
+    conviction: u8,
+) -> Result<()> {
+    require!(score_value <= 5, VotingError::InvalidScore);
+    require!(conviction <= 6, VotingError::InvalidConviction);
+
+    let mut scores = ctx.accounts.score.load_mut()?;
+    let mut weights = ctx.accounts.weight.load_mut()?;
+    let mut voters = ctx.accounts.voter.load_mut()?;
+
+    let voter_pk = ctx.accounts.voter_signer.key();
+    let weight_val = conviction_weight(conviction)?;
+
+    // Find if voter already voted
+    let mut index: Option<usize> = None;
+    for i in 0..MAX_VOTES {
+        if voters.data[i] == voter_pk {
+            index = Some(i);
+            break;
+        }
+        if voters.data[i] == Pubkey::default() && index.is_none() {
+            // first empty slot
+            index = Some(i);
+        }
+    }
+
+    require!(index.is_some(), VotingError::NoSpaceLeft);
+    let i = index.unwrap();
+
+    voters.data[i] = voter_pk;
+    scores.data[i] = score_value;
+    weights.data[i] = weight_val;
+
+    Ok(())
+}
+
+#[derive(Accounts)]
+#[instruction(proposer: Pubkey)]
+pub struct FinalizeProposal<'info> {
+    #[account(mut, seeds = [b"proposal", proposer.key().as_ref()], bump)]
+    pub proposal: Account<'info, Proposal>,
+    #[account()]
+    pub score: AccountLoader<'info, Score>,
+    #[account()]
+    pub weight: AccountLoader<'info, Weight>,
+    #[account()]
+    pub voter: AccountLoader<'info, Voter>,
+    #[account(mut)]
+    pub user: Signer<'info>,
+}
+
+pub fn finalize_handler(ctx: Context<FinalizeProposal>) -> Result<()> {
+    let proposal = &mut ctx.accounts.proposal;
+
+    let scores = ctx.accounts.score.load()?;
+    let weights = ctx.accounts.weight.load()?;
+    let voters = ctx.accounts.voter.load()?;
+
+    let mut weighted_scores = vec![];
+
+    for i in 0..MAX_VOTES {
+        if voters.data[i] != Pubkey::default() {
+            for _ in 0..weights.data[i] {
+                weighted_scores.push(scores.data[i]);
+            }
+        }
+    }
+
+    require!(!weighted_scores.is_empty(), VotingError::NoVotes);
+
+    weighted_scores.sort();
+    let mid = weighted_scores.len() / 2;
+    let median = if weighted_scores.len() % 2 == 0 {
+        (weighted_scores[mid - 1] + weighted_scores[mid]) / 2
+    } else {
+        weighted_scores[mid]
+    };
+
+    proposal.final_score = Some(median);
+    proposal.score_updated_at = Some(Clock::get()?.unix_timestamp);
+
+    Ok(())
+}
 
 #[error_code]
 pub enum VotingError {
@@ -104,6 +154,10 @@ pub enum VotingError {
     NoVotes,
     #[msg("Already delegating.")]
     AlreadyDelegating,
+    #[msg("Unauthorized.")]
+    Unauthorized,
+    #[msg("No space left.")]
+    NoSpaceLeft,
 }
 
 pub fn conviction_weight(conviction: u8) -> Result<u8> {

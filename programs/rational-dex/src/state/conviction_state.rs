@@ -1,27 +1,29 @@
 use anchor_lang::prelude::*;
 
+pub const MAX_VOTES: usize = 10_485_752; // ~10 MB
+
 #[account]
 #[derive(InitSpace)]
 pub struct Proposal {
     pub author: Pubkey,
     #[max_len(32)]
     pub evidence: String,
-    pub votes_account_count: u8, // number of ProposalVotes PDAs
+    pub votes_account_count: u8, // number of (Score, Weight, Voter) chunks
     pub final_score: Option<u8>,
     pub score_updated_at: Option<i64>,
 }
 
-#[account]
-#[derive(InitSpace)]
-pub struct ProposalVotes {
-    #[max_len(250)] // each chunk max 250 votes
-    pub votes: Vec<VoteRecord>,
+#[account(zero_copy)]
+pub struct Score {
+    pub data: [u8; MAX_VOTES],
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Default, InitSpace)]
-pub struct VoteRecord {
-    pub voter: Pubkey,
-    pub score: u8,
-    pub conviction: u8,
-    pub weight: u8,
+#[account(zero_copy)]
+pub struct Weight {
+    pub data: [u8; MAX_VOTES],
+}
+
+#[account(zero_copy)]
+pub struct Voter {
+    pub data: [Pubkey; MAX_VOTES],
 }

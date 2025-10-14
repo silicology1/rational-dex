@@ -85,8 +85,8 @@ pub mod rational_dex {
 
     // Conviction Voting Instructions
 
-    pub fn create_proposal(ctx: Context<CreateProposal>, evidence: String) -> Result<()> {
-        create_proposal_handler(ctx, evidence)
+    pub fn initialize_proposal(ctx: Context<InitializeProposal>, evidence: String) -> Result<()> {
+        initialize_proposal_handler(ctx, evidence)
     }
 
     // pub fn conviction_vote(
