@@ -7696,6 +7696,7 @@ dependencies = [
  "solana-program-option",
  "solana-program-pack",
  "solana-pubkey",
+ "solana-sdk",
  "solana-signer",
  "solana-transaction",
  "spl-associated-token-account 7.0.0",

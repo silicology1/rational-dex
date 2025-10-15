@@ -24,7 +24,7 @@ solana-keypair = "2.2.3"
 solana-signer = "2.2.1"
 solana-transaction = "2.2.3"
 solana-instruction = { version = "2.3.0", features = ["bincode"]}
-# solana-sdk = "2.3.1"
+solana-sdk = "2.3.1"
 spl-associated-token-account-client = "2.0.0"
 solana-account = "2.1.21"
 solana-program-option = "2.1.21"

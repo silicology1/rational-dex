@@ -8,8 +8,16 @@ pub struct Proposal {
     pub author: Pubkey,
     #[max_len(32)]
     pub evidence: String,
-    pub votes_account_count: u8, // number of (Score, Weight, Voter) chunks
     pub final_score: Option<u8>,
+    pub score_updated_at: Option<i64>,
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct AuthorState {
+    pub author: Pubkey,
+    pub proposal_count: u64,
+    pub last_final_score: Option<u8>,
     pub score_updated_at: Option<i64>,
 }
 
@@ -26,4 +34,13 @@ pub struct Weight {
 #[account(zero_copy)]
 pub struct Voter {
     pub data: [Pubkey; MAX_VOTES],
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct ProposalAccounts {
+    pub proposal: Pubkey,
+    pub score_account: Pubkey,
+    pub weight_account: Pubkey,
+    pub voter_account: Pubkey,
 }

@@ -1,6 +1,8 @@
 /// Conviction voting is used to assign reputation scores to accounts. Each account can receive a score between 0 and 5, and the final reputation is determined by the median of all votes, weighted by conviction.
 use crate::conviction_state::MAX_VOTES;
-use crate::state::conviction_state::{Proposal, Score, Voter, Weight};
+use crate::state::conviction_state::{
+    AuthorState, Proposal, ProposalAccounts, Score, Voter, Weight,
+};
 use anchor_lang::prelude::*;
 
 pub fn initialize_proposal_handler(
@@ -8,11 +10,41 @@ pub fn initialize_proposal_handler(
     evidence: String,
 ) -> Result<()> {
     let proposal = &mut ctx.accounts.proposal;
+    let author_state = &mut ctx.accounts.author_state;
+    let proposal_accounts = &mut ctx.accounts.proposal_accounts;
+
+    // ✅ Ownership checks
+    require!(
+        ctx.accounts.score.to_account_info().owner == ctx.program_id,
+        VotingError::InvalidAccountOwner
+    );
+    require!(
+        ctx.accounts.weight.to_account_info().owner == ctx.program_id,
+        VotingError::InvalidAccountOwner
+    );
+    require!(
+        ctx.accounts.voter.to_account_info().owner == ctx.program_id,
+        VotingError::InvalidAccountOwner
+    );
+
+    // ✅ Initialize proposal data
     proposal.author = ctx.accounts.author.key();
     proposal.evidence = evidence;
-    proposal.votes_account_count = 1;
     proposal.final_score = None;
     proposal.score_updated_at = None;
+
+    // ✅ Record linked accounts
+    proposal_accounts.proposal = proposal.key();
+    proposal_accounts.score_account = ctx.accounts.score.key();
+    proposal_accounts.weight_account = ctx.accounts.weight.key();
+    proposal_accounts.voter_account = ctx.accounts.voter.key();
+
+    // ✅ Increment author’s proposal count
+    author_state.proposal_count = author_state
+        .proposal_count
+        .checked_add(1)
+        .ok_or(VotingError::OverflowError)?; // return a custom error
+
     Ok(())
 }
 
@@ -21,15 +53,44 @@ pub struct InitializeProposal<'info> {
     #[account(mut)]
     pub author: Signer<'info>,
 
+    // Stores author metadata and proposal counter
+    #[account(
+        init_if_needed,
+        payer = author,
+        space = 8 + AuthorState::INIT_SPACE,
+        seeds = [b"author_state", author.key().as_ref()],
+        bump
+    )]
+    pub author_state: Account<'info, AuthorState>,
+
+    // Each proposal has unique index under the same author
     #[account(
         init,
         payer = author,
         space = 8 + Proposal::INIT_SPACE,
-        seeds = [b"proposal", author.key().as_ref()],
+        seeds = [
+            b"proposal",
+            author.key().as_ref(),
+            &author_state.proposal_count.to_le_bytes()
+        ],
         bump
     )]
     pub proposal: Account<'info, Proposal>,
 
+    // Record that links the proposal and its related PDAs
+    #[account(
+        init,
+        payer = author,
+        space = 8 + ProposalAccounts::INIT_SPACE,
+        seeds = [
+            b"proposal_accounts",
+            proposal.key().as_ref()
+        ],
+        bump
+    )]
+    pub proposal_accounts: Account<'info, ProposalAccounts>,
+
+    // Large zero-copy accounts (allocated separately)
     #[account(zero)]
     pub score: AccountLoader<'info, Score>,
 
@@ -158,6 +219,10 @@ pub enum VotingError {
     Unauthorized,
     #[msg("No space left.")]
     NoSpaceLeft,
+    #[msg("Invalid account owner.")]
+    InvalidAccountOwner,
+    #[msg("Overflow error.")]
+    OverflowError,
 }
 
 pub fn conviction_weight(conviction: u8) -> Result<u8> {
