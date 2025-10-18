@@ -89,16 +89,12 @@ pub mod rational_dex {
         initialize_proposal_handler(ctx, evidence)
     }
 
-    // pub fn conviction_vote(
-    //     ctx: Context<CastVote>,
-    //     _proposer: Pubkey,
-    //     score: u8,
-    //     conviction: u8,
-    // ) -> Result<()> {
-    //     conviction_vote_handler(ctx, _proposer, score, conviction)
-    // }
-
-    // pub fn finalize(ctx: Context<FinalizeProposal>, _proposer: Pubkey) -> Result<()> {
-    //     finalize_handler(ctx, _proposer)
-    // }
+    pub fn conviction_vote(
+        ctx: Context<VoteProposal>,
+        _proposal_count: u64,
+        score: u8,
+        conviction: u8,
+    ) -> Result<()> {
+        conviction_vote_handler(ctx, _proposal_count, score, conviction)
+    }
 }
