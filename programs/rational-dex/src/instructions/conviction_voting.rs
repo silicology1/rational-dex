@@ -1,7 +1,13 @@
-/// Conviction voting is used to assign reputation scores to accounts. Each account can receive a score between 0 and 5.
+/// Conviction voting is used to assign reputation scores to accounts. Each account can receive a score between 0 and 10.
 use crate::state::conviction_state::{AuthorState, Proposal, Scores, Voter};
 use anchor_lang::prelude::*;
-
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token_interface::{
+        close_account, transfer_checked, CloseAccount, Mint, TokenAccount, TokenInterface,
+        TransferChecked,
+    },
+};
 pub fn initialize_proposal_handler(
     ctx: Context<InitializeProposal>,
     evidence: String,
@@ -39,9 +45,7 @@ pub fn conviction_vote_handler(
     let weight = conviction_weight(conviction)? as u64;
 
     // ✅ Check if voter has already voted
-    if voter_account.voted {
-        return err!(VotingError::AlreadyDelegating);
-    }
+    require!(!voter_account.voted, VotingError::AlreadyVoted);
 
     // Initialize score it scores.count is empty:
     if scores.counts.is_empty() {
@@ -59,6 +63,30 @@ pub fn conviction_vote_handler(
         .ok_or(VotingError::OverflowError)?;
     // ✅ Mark voter as voted
     voter_account.voted = true;
+
+    // ✅ Lock tokens based on conviction
+    let lock_amount: u64 = 10_000_000 * weight; // example: conviction, 10 tokens per conviction weight
+    let decimals = ctx.accounts.mint.decimals;
+    let lock_duration = 60 * 60 * 24 * (conviction as i64) * 10; // days = conviction × 10 day
+
+    voter_account.conviction = conviction;
+    voter_account.locked_amount = lock_amount;
+    voter_account.unlock_time = Clock::get()?.unix_timestamp + lock_duration;
+
+    // SPL TransferChecked ensures mint & decimals consistency
+    transfer_checked(
+        CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            TransferChecked {
+                from: ctx.accounts.voter_token_account.to_account_info(),
+                mint: ctx.accounts.mint.to_account_info(),
+                to: ctx.accounts.vault_token_account.to_account_info(),
+                authority: ctx.accounts.voter.to_account_info(),
+            },
+        ),
+        lock_amount,
+        decimals,
+    )?;
 
     Ok(())
 }
@@ -102,6 +130,28 @@ pub struct VoteProposal<'info> {
     #[account(mut)]
     pub voter: Signer<'info>,
 
+    // ✅ SPL Token mint (your native token)
+    #[account(mint::token_program = token_program)]
+    pub mint: InterfaceAccount<'info, Mint>,
+
+    #[account(
+          mut,
+          associated_token::mint = mint,
+          associated_token::authority = voter,
+          associated_token::token_program = token_program,
+      )]
+    pub voter_token_account: InterfaceAccount<'info, TokenAccount>,
+
+    // ✅ PDA vault to hold locked tokens
+    #[account(
+            init_if_needed, // double check it, init_if_needed or just init
+            payer = voter,
+            associated_token::mint = mint,
+            associated_token::authority = scores,
+            associated_token::token_program = token_program,
+        )]
+    pub vault_token_account: InterfaceAccount<'info, TokenAccount>,
+
     #[account(init_if_needed, payer = voter, space = 8 + Scores::INIT_SPACE,
         seeds = [
             b"scores",
@@ -125,6 +175,8 @@ pub struct VoteProposal<'info> {
     pub voter_account: Account<'info, Voter>,
 
     pub system_program: Program<'info, System>,
+    pub token_program: Interface<'info, TokenInterface>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
 #[error_code]
@@ -135,8 +187,8 @@ pub enum VotingError {
     InvalidConviction,
     #[msg("No votes yet.")]
     NoVotes,
-    #[msg("Already delegating.")]
-    AlreadyDelegating,
+    #[msg("Already Voted.")]
+    AlreadyVoted,
     #[msg("Unauthorized.")]
     Unauthorized,
     #[msg("No space left.")]

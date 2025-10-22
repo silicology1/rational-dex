@@ -29,4 +29,7 @@ pub struct Scores {
 #[derive(InitSpace)]
 pub struct Voter {
     pub voted: bool,
+    pub conviction: u8,
+    pub locked_amount: u64,
+    pub unlock_time: i64, // Unix timestamp when tokens can be unlocked
 }
