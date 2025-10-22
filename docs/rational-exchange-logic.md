@@ -8,7 +8,7 @@ This principle can be applied to create a **Consensus DEX**—a decentralized ex
 
 - **Commit and Reveal Voting**: Users first submit a hidden vote (encrypted or hashed) for a token’s price. After a set period, they reveal their vote.
 - **Conviction Weighting**: Votes are weighted based on the duration of token lockup. This reflects the voter’s confidence and long-term commitment to the token.
-- **Median-Based Outcome**: The final price is determined by the median of all revealed, weighted votes. This method filters out extreme outliers and reduces the risk of manipulation.
+- **Mean-Based Outcome:**  As voting is weighted, mean values are not a problem because the weighted average naturally reflects the collective preference.
 - **Stakeholder-Driven Prices**: Unlike traditional DEXs, this model incorporates the voices of token holders, developers, community members, and long-term investors—those who are genuinely invested in the token’s mission and impact.
 
 ### **Why This Matters**
