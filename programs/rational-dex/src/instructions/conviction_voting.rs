@@ -67,7 +67,7 @@ pub fn conviction_vote_handler(
     // ✅ Lock tokens based on conviction
     let lock_amount: u64 = 10_000_000 * weight; // example: conviction, 10 tokens per conviction weight
     let decimals = ctx.accounts.mint.decimals;
-    let lock_duration = 60 * 60 * 24 * (conviction as i64) * 10; // days = conviction × 10 day
+    let lock_duration = 60 * 60 * 24 * (weight as i64) * 10; // days = weight × 10 day
 
     voter_account.conviction = conviction;
     voter_account.locked_amount = lock_amount;

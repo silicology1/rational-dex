@@ -3,6 +3,7 @@ pub mod initialize;
 pub mod poll;
 pub mod pool;
 pub mod reveal;
+pub mod swap;
 pub mod vote;
 
 pub use conviction_voting::*;
