@@ -7,7 +7,8 @@ use anchor_spl::{
 
 use crate::ANCHOR_DISCRIMINATOR;
 
-use super::transfer_tokens;
+use super::{compute_token_b_wanted, transfer_tokens};
+use crate::events::OfferCreated;
 
 #[derive(Accounts)]
 #[instruction(id: u64)]
@@ -90,38 +91,17 @@ pub fn save_offer(context: Context<MakeOffer>, id: u64, token_a_offered_amount: 
         token_mint_a: context.accounts.token_mint_a.key(),
         token_mint_b: context.accounts.token_mint_b.key(),
         token_b_wanted_amount,
+        remaining_amount: token_a_offered_amount,
         bump: context.bumps.offer,
     });
+
+    emit!(OfferCreated {
+        offer_id: id,
+        maker: context.accounts.maker.key(),
+        token_mint_a: context.accounts.token_mint_a.key(),
+        token_mint_b: context.accounts.token_mint_b.key(),
+        offered_amount: token_a_offered_amount,
+        wanted_amount: token_b_wanted_amount,
+    });
     Ok(())
-}
-
-fn compute_token_b_wanted(token_a_offered_account: u64, price_a: u64, price_b: u64) -> Result<u64> {
-    // widen to u128 for safe intermediate multiplication
-    let offered = token_a_offered_account;
-
-    if price_b == 0 {
-        return Err(DexError::PriceNotSet.into());
-    }
-
-    if price_a == 0 {
-        return Err(DexError::PriceNotSet.into());
-    }
-
-    // multiply, checking overflow
-    let product = offered.checked_mul(price_a).ok_or(DexError::Overflow)?;
-
-    // divide, checking overflow (division itself won't overflow, but keep pattern)
-    let token_b_wanted = product.checked_div(price_b).ok_or(DexError::Overflow)?;
-
-    Ok(token_b_wanted)
-}
-
-#[error_code]
-pub enum DexError {
-    #[msg("Arithmetic overflow")]
-    Overflow,
-    #[msg("Division by zero")]
-    DivisionByZero,
-    #[msg("Price not set")]
-    PriceNotSet,
 }

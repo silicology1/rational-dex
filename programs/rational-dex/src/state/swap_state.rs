@@ -9,6 +9,7 @@ pub struct Offer {
     pub token_mint_a: Pubkey,
     pub token_mint_b: Pubkey,
     pub token_b_wanted_amount: u64, // Its calculated automatically from the token A amount and the swap rate
+    pub remaining_amount: u64,
     pub bump: u8,
 }
 

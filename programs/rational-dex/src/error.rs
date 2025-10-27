@@ -64,3 +64,17 @@ pub enum ErrorCode {
     #[msg("Cluster not set")]
     ClusterNotSet,
 }
+
+#[error_code]
+pub enum DexError {
+    #[msg("Arithmetic overflow")]
+    Overflow,
+    #[msg("Division by zero")]
+    DivisionByZero,
+    #[msg("Price not set")]
+    PriceNotSet,
+    #[msg("Invalid amount")]
+    InvalidAmount,
+    #[msg("Insufficient offer")]
+    InsufficientOffer,
+}
